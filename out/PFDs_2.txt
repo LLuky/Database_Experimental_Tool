@@ -1,5 +1,0 @@
-M;P;T;R
-MT;R;1
-RT;P;2
-PT;M;3
-P;M;4
