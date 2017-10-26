@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static com.Functions.*;
 import static com.ThirdNF_Decomposition.*;
@@ -223,8 +224,8 @@ public class PFD {
         PFD pfd4 = new PFD(test7,test8,3);
         ArrayList<PFD> test2List = new ArrayList<PFD>(Arrays.asList(pfd1, pfd2));
         ArrayList<String> r = new ArrayList<String>(Arrays.asList("M", "S", "T", "P"));
-        System.out.println(test2List);
-        System.out.println("Closure: " + getClosureForAttr(new ArrayList<String>(Arrays.asList("T","M")),test2List,1));
+//        System.out.println(test2List);
+//        System.out.println("Closure: " + getClosureForAttr(new ArrayList<String>(Arrays.asList("T","M")),test2List,1));
 //        System.out.println("BDNF? "+ isSatisfiedBDFN(test2List,3));
 //        System.out.println(getCanCover1(test2List));
 //        S = DecomposeWithTheCertainty(r,test2List,4);
@@ -236,6 +237,20 @@ public class PFD {
 //        System.out.println("B-prime: "+getBetaPrimeList(test2List,r,2));
 //        System.out.println("Satisfied 3NF? "+isSatisfied3NF(test2List,r,3));
 //        System.out.println("Is not subset:"+isNotSubset(pfd4,test2List));
+        ArrayList<String> t = new ArrayList<>();
+        t.add("A");
+        t.add("B");
+        t.add("C");
+        ArrayList<String> t1 = new ArrayList<>();
+        t1.add("B");
+        t1.add("A");
+//        t1.add("D");
+        t.retainAll(t1);
+        System.out.println(t.toString());
+        System.out.println(String.join("",t1));
+
+        System.out.println(getAllCombo(r).toString());
+
 }
 
 

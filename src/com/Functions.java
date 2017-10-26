@@ -34,8 +34,7 @@ public class Functions {
 
     //Non-redundant, L-reduced covers where all FDs have the form X->A
     public static ArrayList<PFD> getCanCover1(ArrayList<PFD> FDList){
-        ArrayList<PFD>  CanCover = new ArrayList<>();
-        CanCover.addAll(FDList);
+        ArrayList<PFD>  CanCover = new ArrayList<>(FDList);
         for(PFD curPfd: FDList){
             ArrayList<String> z = new ArrayList<>();
             z.addAll(curPfd.x);
@@ -45,7 +44,7 @@ public class Functions {
             for(String b: iter){
                 z.remove(b);
                 ArrayList<String> closureArrayList = getClosureForAttr(z,CanCover,curPfd.certainty);
-                System.out.println("x:"+z.toString()+ ", Closure:"+closureArrayList.toString());
+//                System.out.println("x:"+z.toString()+ ", Closure:"+closureArrayList.toString());
                 if(!contain(closureArrayList,curPfd.y))
                     z.add(b);
                 }
@@ -57,7 +56,7 @@ public class Functions {
                 CanCover.add(pfd);
             }
         }
-        System.out.println("CanCover(before merge)--"+CanCover.toString());
+//        System.out.println("CanCover(before merge)--"+CanCover.toString());
         NRcover(CanCover);
         return CanCover;
     }
@@ -66,7 +65,6 @@ public class Functions {
     //Non-redundant, L-reduced covers where the LHSs of FDs are unique for the same beta
     public static ArrayList<PFD> getCanCover2(ArrayList<PFD> FDList){
         ArrayList<PFD>  CanCover = getCanCover1(FDList);
-
         ArrayList<PFD> iter = new ArrayList<>();
         iter.addAll(CanCover);
         // Store for a Map with the certainty as key and all the X (left-hand side) as value
@@ -153,76 +151,34 @@ public class Functions {
         }
         return flag;
     }
-	
-	public static ArrayList<PFD> expand(ArrayList<PFD> FDList){
-        ArrayList<PFD> expandedList = new ArrayList<>(FDList);
-        ArrayList<PFD> newFDList = new ArrayList<>();
-        Iterator<PFD> iterator = expandedList.iterator();
-        while (iterator.hasNext()){
-            PFD curPfd = iterator.next();
-            if(curPfd.y.size() > 1){
-                iterator.remove();
-                for (String str1 : curPfd.y) {
-                    ArrayList<String> listY = new ArrayList<>();
-                    listY.add(str1);
-                    PFD pfd = new PFD(curPfd.x,listY,curPfd.certainty);
-                    newFDList.add(pfd);
-                }
-            }
-        }
-        expandedList.addAll(newFDList);
-        return expandedList;
-    }
 
-
-
-
-    public static boolean isKey(ArrayList<String> key, ArrayList<PFD> Sigma,int certainty){
+    public static boolean isKey(ArrayList<String> key, ArrayList<PFD> Sigma,ArrayList<String> r,int certainty){
 	    boolean iskey = false;
 	    ArrayList<String> keyClosure = getClosureForAttr(key,Sigma,certainty);
 //        System.out.println(key.toString()+"_Closure = "+ keyClosure);
-	    if(equal(keyClosure,R(Sigma))){
-            System.out.println(key + " is key!! ");
-	        iskey = true;
-        }else {
-            System.out.println(key + " is not key ");
+	    if(equal(keyClosure,r)) {
+//            System.out.println(key + " is key!! ");
+            iskey = true;
         }
+//        else {
+////            System.out.println(key + " is not key ");
+//        }
 	    return iskey;
     }
 
-    private static ArrayList<String> R(ArrayList<PFD> Sigma){
-
-        ArrayList<String> attributes = new ArrayList<>();
-        for(PFD curPfd: Sigma){
-            for(String x: curPfd.x){
-                if(!attributes.contains(x)){
-                    attributes.add(x);
-                }
-            }
-            for(String y: curPfd.y){
-                if(!attributes.contains(y)){
-                    attributes.add(y);
-                }
-            }
-        }
-        return attributes;
-
-    }
-
-    public static ArrayList<Pair<ArrayList<String>,ArrayList<PFD>>> DecomposeWithTheCertainty(ArrayList<String> r, ArrayList<PFD> FDList,int certainty){
+    public static ArrayList<Pair<ArrayList<String>,ArrayList<PFD>>> Decompose(ArrayList<String> r, ArrayList<PFD> FDList,ArrayList<PFD> prjOfFDList,int certainty){
         ArrayList<Pair<ArrayList<String>,ArrayList<PFD>>> DecomposeRes = new ArrayList<>();
-        ArrayList<PFD> FDClone = betaCut(FDList,certainty);
-
-        if(isSatisfiedBDFN(FDList,certainty))
-            DecomposeRes.add(new Pair(r,FDClone));
+        ArrayList<PFD> newFDClone = new ArrayList<>(FDList);
+        if(isSatisfiedBDFN(FDList,r,certainty))
+            DecomposeRes.add(new Pair(r,FDList));
         else {
-            Iterator<PFD> it = FDClone.iterator();
+            Iterator<PFD> it = FDList.iterator();
             PFD selectPfd = null;
             while (it.hasNext()){
                 PFD pfd = it.next();
-                if(!isKey(pfd.x, FDList, certainty)){
+                if(!isKey(pfd.x, FDList,r, certainty)){
                     selectPfd = pfd;
-                    FDClone.remove(selectPfd);
+//                    FDList.remove(selectPfd);
                     break;
                 }
             }
@@ -233,7 +189,7 @@ public class Functions {
                     R1.add(str);
             }
 
-            ArrayList<PFD> projectionR1 = projectToR(R1,FDList,certainty);
+            ArrayList<PFD> projectionR1 = getRelevantFDs(R1,prjOfFDList);
 
             ArrayList R2 = new ArrayList();
             R2.addAll(selectPfd.x);
@@ -241,40 +197,143 @@ public class Functions {
             rClone.removeAll(R1);
             R2.addAll(rClone);
 
-            ArrayList<PFD> projectionR2 = projectToR(R2,FDList,certainty);
+            ArrayList<PFD> projectionR2 = getRelevantFDs(R2,prjOfFDList);
 
             System.out.println("P2:" + R2.toString());
             System.out.println("Projection:" + projectionR2.toString());
 
 
-            DecomposeRes.addAll(DecomposeWithTheCertainty(R1,projectionR1,certainty));
-            DecomposeRes.addAll(DecomposeWithTheCertainty(R2,projectionR2,certainty));
+            DecomposeRes.addAll(Decompose(R1,projectionR1,prjOfFDList,certainty));
+            DecomposeRes.addAll(Decompose(R2,projectionR2,prjOfFDList,certainty));
         }
         return DecomposeRes;
     }
 
-    public static boolean isSatisfiedBDFN(ArrayList<PFD> FDList,int certainty){
-        for (PFD pfd: FDList) {
-            if(pfd.certainty <= certainty){
-                if(!isKey(pfd.x, FDList, certainty))
-                    return false;
+    public static boolean isSatisfiedBDFN(ArrayList<PFD> FDList,ArrayList<String> r,int certainty){
+        boolean isKey = true;
+        Iterator<PFD> it = FDList.iterator();
+        PFD removedPFD = null;
+        while (it.hasNext()){
+            PFD pfd = it.next();
+            if(!isKey(pfd.x, FDList, r,certainty)){
+                it.remove();
+                isKey = false;
+                removedPFD = pfd;
+                break;
             }
         }
-        return true;
+        if(!isKey){
+            FDList.add(0,removedPFD);
+        }
+        return isKey;
     }
-    
+    // get relevant FDs from projection of FDList
+    public static ArrayList<PFD> getRelevantFDs(ArrayList<String> r, ArrayList<PFD> prj){
+        ArrayList<PFD> subProjection = new ArrayList<>();
+        for (PFD pfd: prj) {
+            if(r.containsAll(pfd.x) && r.containsAll(pfd.y))
+                subProjection.add(pfd);
+        }
+
+        return subProjection;
+    }
     public static ArrayList<PFD> projectToR(ArrayList<String> r1, ArrayList<PFD> FDList,int certainty){
         ArrayList<PFD> projectionOfR = new ArrayList<>();
         ArrayList<String> allCombo = getAllCombo(r1);
-
+        ArrayList<String> keyList = new ArrayList<>();
         for (String str : allCombo){
-            ArrayList<String> closure = getClosureForAttr(new ArrayList<>(Arrays.asList(str.split(""))), FDList, certainty);
+            ArrayList<String> strList = new ArrayList<>(Arrays.asList(str.split("")));
+            ArrayList<String> closure = getClosureForAttr(strList, FDList, certainty);
+            if(equal(r1,closure)){
+                if(!isRedundantKey(keyList,strList)){
+                    keyList.add(str);
+                }
+                else {
+                    continue;
+                }
+            }
             for (String strInClosure : closure){
-                if(r1.contains(strInClosure) && !str.contains(strInClosure))
-                    projectionOfR.add(new PFD(new ArrayList<>(Arrays.asList(str.split(""))), new ArrayList<>(Arrays.asList(strInClosure.split(""))),certainty));
+                PFD curPFD = new PFD(strList, new ArrayList<>(Arrays.asList(strInClosure.split(""))),certainty);
+                if(r1.contains(strInClosure) && !str.contains(strInClosure) && isNotXRedundant(curPFD,projectionOfR))
+                    projectionOfR.add(curPFD);
             }
         }
         return projectionOfR;
+    }
+
+//    public static ArrayList<PFD> projectToR2(ArrayList<String> r1, ArrayList<PFD> FDList,int certainty){
+//        ArrayList<PFD> projectionOfR = new ArrayList<>();
+//        ArrayList<String> allCombo = getAllCombo(r1);
+//        ArrayList<String> comboClone = new ArrayList<>(allCombo);
+//        for (String str : allCombo){
+//            if(allCombo.contains(str)){
+//                ArrayList<String> strList = new ArrayList<>(Arrays.asList(str.split("")));
+//                ArrayList<String> closure = getClosureForAttr(strList, FDList, certainty);
+//                if(equal(closure,r1)){
+//                    removeSuperkey(comboClone,strList);
+//                }
+//                for (String strInClosure : closure){
+//                    PFD curPFD = new PFD(strList, new ArrayList<>(Arrays.asList(strInClosure.split(""))),certainty);
+//                    if(r1.contains(strInClosure) && !str.contains(strInClosure) && isNotXRedundant(curPFD,projectionOfR))
+//                        projectionOfR.add(curPFD);
+//                }
+//            }
+//        }
+//        return projectionOfR;
+//    }
+
+    public static ArrayList<PFD> projectToR3(ArrayList<String> r1, ArrayList<PFD> FDList,int certainty){
+        ArrayList<PFD> projectionOfR = new ArrayList<>();
+        ArrayList<String> newR = new ArrayList<>();
+        ArrayList<String> allCombo = new ArrayList<>();
+        for (PFD pfd: FDList) {
+            ArrayList<String> cutX = pfd.x;
+            cutX.retainAll(r1);
+            newR.add(String.join("",cutX));
+        }
+        allCombo = getAllCombo(newR);
+        ArrayList<String> keyList = new ArrayList();
+        for (String str : allCombo){
+            ArrayList<String> strList = new ArrayList<>(Arrays.asList(str.split("")));
+            ArrayList<String> closure = getClosureForAttr(strList, FDList, certainty);
+//            if(equal(r1,closure)){
+//                if(!isRedundantKey(keyList,strList)){
+//                    keyList.add(str);
+//                }
+//                else {
+//                    continue;
+//                }
+//            }
+            for (String strInClosure : closure){
+                PFD curPFD = new PFD(strList, new ArrayList<>(Arrays.asList(strInClosure.split(""))),certainty);
+                if(r1.contains(strInClosure) && !str.contains(strInClosure) && isNotXRedundant(curPFD,projectionOfR))
+                    projectionOfR.add(curPFD);
+            }
+        }
+        return projectionOfR;
+    }
+
+
+    // remove superkey
+    public static void removeSuperkey(ArrayList<String> comList,ArrayList<String> key){
+        Iterator<String> it = comList.iterator();
+        while (it.hasNext()){
+            ArrayList<String> curStr = new ArrayList<>(Arrays.asList(it.next().split("")));
+            if(curStr.containsAll(key))
+                it.remove();
+        }
+    }
+    // is superset of key
+    public static boolean isRedundantKey(ArrayList<String> keyList, ArrayList<String> curX){
+        Iterator<String> it = keyList.iterator();
+        while (it.hasNext()){
+            String[] curKeyArray = it.next().split("");
+            ArrayList<String> curKeyList = new ArrayList<>(Arrays.asList(curKeyArray));
+            if(curX.containsAll(curKeyList))
+                return true;
+        }
+
+        return false;
     }
 
     public static String turnDeOutputToString(ArrayList<Pair<ArrayList<String>,ArrayList<PFD>>> s){
@@ -304,7 +363,7 @@ public class Functions {
             PFD pfd = it.next();
             if(pfd.certainty > certainty){
                 it.remove();
-                System.out.println("remove" + pfd.toString());
+//                System.out.println("remove" + pfd.toString());
             }
         }
         Iterator<PFD> it2 = cutFDList.iterator();
@@ -312,7 +371,7 @@ public class Functions {
             PFD pfd = it2.next();
             if(!isNotXRedundant(pfd,cutFDList)){
                 it2.remove();
-                System.out.println("remove" + pfd.toString());
+//                System.out.println("remove" + pfd.toString());
             }
         }
         return cutFDList;
@@ -324,7 +383,7 @@ public class Functions {
         for (PFD curPfd: FDList){
             ArrayList<String> xPrimeList = new ArrayList<>();
             xPrimeList.addAll(curPfd.x);
-            if(contain(xList,xPrimeList) && equal(pfd.y,curPfd.y) && !curPfd.equals(pfd))
+            if((contain(xList,xPrimeList) || (contain(xPrimeList,xList))) && equal(pfd.y,curPfd.y) && !curPfd.equals(pfd))
                 return false;
         }
         return true;
@@ -375,14 +434,12 @@ public class Functions {
         Set<Set<String>> powerSet = powerSet(set);
         Iterator<Set<String>> it = powerSet.iterator();
 
-        //combo=powerSet2(r1,combo);
-
         while (it.hasNext()){
             HashSet<String> tempSet = (HashSet<String>) it.next();
             if(!tempSet.isEmpty())
                 combo.add(String.join("",tempSet));
         }
-//        System.out.println(combo.toString());
+        combo.sort(Comparator.comparing(String::length));
         return combo;
     }
 }

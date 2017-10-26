@@ -9,16 +9,21 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Optional;
 
 import static com.Functions.*;
 import static com.MyFileReader.fileReader;
-import static com.TestAlgorithms.genSigma;
-import static com.ThirdNF_Decomposition.getMinimalKeys;
+import static com.TestAlgorithms.*;
+import static com.ThirdNF_Decomposition.getAllMinimalKeys;
+//import static com.ThirdNF_Decomposition.getMinimalKeys;
+import static com.ThirdNF_Decomposition.getAllMinimalKeysV2;
 import static com.ThirdNF_Decomposition.synthesis;
+import static com.createJavaFXNodeFunctions.getTestAlgDialog;
 import static com.createJavaFXNodeFunctions.initFileChooseWithFilter;
 import static com.createJavaFXNodeFunctions.showMessageDialog;
 
@@ -26,10 +31,10 @@ import static com.createJavaFXNodeFunctions.showMessageDialog;
 public class MyGridPane extends Pane {
     String selectedAlg = null;
     static final String runInfoStr = "======= Run Information ======= \n";
-
+    static String output = "";
     TextArea logInfoArea;
     static TextField rTextField;
-    static int k = 0;
+    static int beta = 0;
     static ArrayList<String>    R      =  new ArrayList<>();
     static ArrayList<PFD>       FDList =  new ArrayList<>();
 
@@ -70,14 +75,19 @@ public class MyGridPane extends Pane {
                         "Cononical Cover",
                         "BDNF",
                         "3NF",
+                        "Minimal Keys old version",
                         "Minimal Keys",
-                        "Algorithm Test"
+                        "PFDs Generator",
+                        "Algorithm Test",
+                        "Projection v1",
+                        "Projection v3"
                 );
         ComboBox algComboBox = new ComboBox(algOptions);
         algComboBox.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 selectedAlg = algComboBox.getSelectionModel().getSelectedItem().toString();
+
                 System.out.println(selectedAlg);
             }
         });
@@ -130,11 +140,11 @@ public class MyGridPane extends Pane {
         runButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                String output = runInfoStr;
+                output = runInfoStr;
                 if(selectedAlg == null){
                     showMessageDialog("Please select an algorithm!");
                 }
-                else if (FDList.isEmpty() && !selectedAlg.equals("Algorithm Test")){
+                else if (FDList.isEmpty() && !selectedAlg.equals("PFDs Generator") && !selectedAlg.equals("Algorithm Test")){
                     showMessageDialog("Please add Possibilistic Functional Dependencies!");
                 }
                 else {
@@ -152,8 +162,11 @@ public class MyGridPane extends Pane {
                     else if(selectedAlg == "BDNF"){
                         try{
                             int k = Integer.valueOf(kTextField.getText());
+                            ArrayList<String> r = getRelationList(rTextField.getText());
                             for (int i = 1; i <= k; i++) {
-                                output += "\u00DF" + i +":\n"+turnDeOutputToString(DecomposeWithTheCertainty(getRelationList(),FDList,i)) + "\n";
+                                ArrayList<PFD> cutFDList = betaCut(FDList,i);
+                                ArrayList<PFD> projection = projectToR3(r,cutFDList,i);
+                                output += "\u00DF" + i +":\n"+turnDeOutputToString(Decompose(r,cutFDList,projection,i)) + "\n";
                             }
 
                         }
@@ -165,7 +178,8 @@ public class MyGridPane extends Pane {
 //                        try{
                             int k = Integer.valueOf(kTextField.getText());
                             for (int i = 1; i <= k; i++) {
-                                output += "\u00DF" + i +":\n" + turnDeOutputToString(synthesis(getRelationList(),FDList,i)) + "\n";
+                                ArrayList<PFD> cutFDList = betaCut(FDList,i);
+                                output += "\u00DF" + i +":\n" + turnDeOutputToString(synthesis(getRelationList(rTextField.getText()),cutFDList,i)) + "\n";
 //                            }
 
                         }
@@ -175,27 +189,74 @@ public class MyGridPane extends Pane {
 //
 //                        }
                     }
-                    else if(selectedAlg == "Minimal Keys"){
+                    else if(selectedAlg == "Minimal Keys old version"){
                         try{
                             int k = Integer.valueOf(kTextField.getText());
                             for (int i = 1; i <= k; i++) {
-                                output += ""+ "\u00DF"+ i + ": " +getMinimalKeys(FDList,getRelationList(),i).toString() + "\n";
+                                output += ""+ "\u00DF"+ i + ": " +getAllMinimalKeys(FDList,getRelationList(rTextField.getText()),i).toString() + "\n";
                             }
                         }
                         catch (Exception e){
                             showMessageDialog("Invalid Input!");
                         }
                     }
-                    else if(selectedAlg == "Algorithm Test"){
-                        int k = Integer.valueOf(kTextField.getText());
-                        String rString = rTextField.getText();
-                        ArrayList<String> r = new ArrayList<>(Arrays.asList(rString.split(";")));
+                    else if(selectedAlg == "Minimal Keys"){
+                        try{
+                            int k = Integer.valueOf(kTextField.getText());
+                            for (int i = 1; i <= k; i++) {
+                                output += ""+ "\u00DF"+ i + ": " +getAllMinimalKeysV2(FDList,getRelationList(rTextField.getText()),i).toString() + "\n";
+                            }
+                        }
+                        catch (Exception e){
+                            showMessageDialog("Invalid Input!");
+                        }
+                    }
+                    else if(selectedAlg == "Projection v1"){
+                        try{
+                            int k = Integer.valueOf(kTextField.getText());
+                            for (int i = 1; i <= k; i++) {
+                                output += ""+ "\u00DF"+ i + ": " +projectToR(getRelationList(rTextField.getText()),FDList,i).toString() + "\n";
+                            }
+                        }
+                        catch (Exception e){
+                            showMessageDialog("Invalid Input!");
+                        }
+                    }
+                    else if(selectedAlg == "Projection v3"){
+                        try{
+                            int k = Integer.valueOf(kTextField.getText());
+                            for (int i = 1; i <= k; i++) {
+                                output += ""+ "\u00DF"+ i + ": " +projectToR3(getRelationList(rTextField.getText()),FDList,i).toString() + "\n";
+                            }
+                        }
+                        catch (Exception e){
+                            showMessageDialog("Invalid Input!");
+                        }
+                    }
+                    else if(selectedAlg == "PFDs Generator"){
+                        Dialog dialog = getTestAlgDialog("PFDs Generator");
+                        Optional<ArrayList<String>> result = dialog.showAndWait();
+                        ArrayList<String> resultList = result.get();
+                        int size = Integer.valueOf(resultList.get(0));
+                        beta = Integer.valueOf(resultList.get(1));
+                        R = getRelationList(resultList.get(2));
 
                         items.removeAll(items);
-                        FDList = genSigma(r,k,r.size());
+                        FDList = genSigma(R,beta,size);
                         for (PFD pfd: FDList) {
                             items.add(pfd.toString());
                         }
+                    }
+                    else if(selectedAlg.equals("Algorithm Test")){
+                        Dialog dialog = getTestAlgDialog("v2");
+                        Optional<ArrayList<String>> result = dialog.showAndWait();
+                        ArrayList<String> resultList = result.get();
+                        R = getRelationList(resultList.get(0));
+                        int size = Integer.valueOf(resultList.get(1));
+                        beta = Integer.valueOf(resultList.get(2));
+                        String alg = resultList.get(3);
+                        int round = Integer.valueOf(resultList.get(4));
+                        testAlgorithmsVersion3(alg,round,beta,R,size);
                     }
 
                     logInfoArea.setText(output);
@@ -255,10 +316,10 @@ public class MyGridPane extends Pane {
         return target;
     }
 
-    public ArrayList<String> getRelationList(){
+    public ArrayList<String> getRelationList(String input){
         String[] tempList = null;
         try {
-            tempList = rTextField.getText().split(";");
+            tempList = input.split(";");
         } catch (Exception e){
             System.out.println(e.fillInStackTrace());
             showMessageDialog("Invalid Input!");

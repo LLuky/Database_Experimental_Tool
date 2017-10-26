@@ -7,20 +7,22 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 import static com.Functions.*;
+import static com.MyGridPane.output;
 
 
 public class ThirdNF_Decomposition {
     // Decomposition
     public static ArrayList<Pair<ArrayList<String>,ArrayList<PFD>>> synthesis(ArrayList<String> r,ArrayList<PFD> FDList, int certainty){
-        ArrayList<ArrayList<String>> minimalKeys = getMinimalKeys(FDList,r,certainty);
-        ArrayList<String> betaPrimeList = getBetaPrimeList(FDList,r,certainty);
+        ArrayList<ArrayList<String>> minimalKeys = getAllMinimalKeysV2(FDList,r,certainty);
+        System.out.println("Minimal Keys: " + minimalKeys.toString());
         ArrayList<Pair<ArrayList<String>,ArrayList<PFD>>> decomposedRs = new ArrayList<>();
         ArrayList<String> rClone = new ArrayList<>(r);
 
-        ArrayList<PFD> FDClone = betaCut(FDList,certainty);
-        System.out.println("Beta-cut: " + FDClone.toString());
+        ArrayList<PFD> FDClone = new ArrayList<>(FDList);
 
-        if(isSatisfied3NF(FDList,r,certainty))
+        boolean isSatisfied3NF = isSatisfied3NF(FDClone,r,certainty,minimalKeys);
+        System.out.println("is satisfied 3NF" + isSatisfied3NF);
+        if(isSatisfied3NF)
             decomposedRs.add(new Pair(r,FDClone));
         else{
             ArrayList<PFD> newFDList = getCanCover2(FDClone);
@@ -36,24 +38,24 @@ public class ThirdNF_Decomposition {
                     decomposedRs.add(new Pair(subR,new ArrayList<PFD>(Arrays.asList(curPfd))));
                     sigmaPrime.add(curPfd);
                 }
-                else{
-                    Iterator<Pair<ArrayList<String>,ArrayList<PFD>>> it2 = decomposedRs.iterator();
-                    while (it2.hasNext()){
-                        Pair<ArrayList<String>,ArrayList<PFD>> pair = it2.next();
-                        if(equal(pair.getKey(),subR))
-                            pair.getValue().add(curPfd);
-                    }
-                }
+//                else{
+//                    Iterator<Pair<ArrayList<String>,ArrayList<PFD>>> it2 = decomposedRs.iterator();
+//                    while (it2.hasNext()){
+//                        Pair<ArrayList<String>,ArrayList<PFD>> pair = it2.next();
+//                        if(equal(pair.getKey(),subR))
+//                            pair.getValue().add(curPfd);
+//                    }
+//                }
             }
 
             if (!isContainedKeyInSigmaPrime(sigmaPrime,minimalKeys)){
-                if(minimalKeys.isEmpty()){
+                if(!minimalKeys.isEmpty()){
                     int size = rClone.size();
                     ArrayList<String> processRList = new ArrayList<>(rClone);
                     while (true) {
                         for (String attr: rClone) {
                             processRList.remove(attr);
-                            if(!equal(r,getClosureForAttr(processRList,FDList,certainty)))
+                            if(!equal(r,getClosureForAttr(processRList,FDClone,certainty)))
                                 processRList.add(attr);
                         }
                         if (size == processRList.size())
@@ -72,62 +74,132 @@ public class ThirdNF_Decomposition {
         return decomposedRs;
     }
     // Get all minimal keys from PFDs
-    public static ArrayList<ArrayList<String>> getMinimalKeys(ArrayList<PFD> FDList, ArrayList<String> r, int certainty){
-        ArrayList<ArrayList<String>> minimalKeys = new ArrayList<>();
-        for (PFD pdf: FDList) {
-            ArrayList<String> closureOfCurrentPfd = getClosureForAttr(pdf.x,FDList,certainty);
-            if(equal(closureOfCurrentPfd,r)){
-                if(pdf.x.size() == 1)
-                    minimalKeys.add(pdf.x);
-                else{
-                    ArrayList<String> subset = getAllCombo(pdf.x);
-                    boolean isMinimal = true;
-                    for (String str: subset) {
-                        String[] strList = str.split("");
-                        if(strList.length < pdf.x.size()){
-                            ArrayList<String> closure = getClosureForAttr(new ArrayList(Arrays.asList(strList)),FDList,certainty);
-                            if(equal(closure,r))
-                                isMinimal = false;
-                        }
-                    }
-                    if(isMinimal)
-                        minimalKeys.add(pdf.x);
+//    public static ArrayList<ArrayList<String>> getMinimalKeys(ArrayList<PFD> FDList, ArrayList<String> r, int certainty){
+//        ArrayList<ArrayList<String>> minimalKeys = new ArrayList<>();
+//        for (PFD pdf: FDList) {
+//            ArrayList<String> closureOfCurrentPfd = getClosureForAttr(pdf.x,FDList,certainty);
+//            if(equal(closureOfCurrentPfd,r)){
+//                if(pdf.x.size() == 1)
+//                    minimalKeys.add(pdf.x);
+//                else{
+//                    ArrayList<String> subset = getAllCombo(pdf.x);
+//                    boolean isMinimal = true;
+//                    for (String str: subset) {
+//                        String[] strList = str.split("");
+//                        if(strList.length < pdf.x.size()){
+//                            ArrayList<String> closure = getClosureForAttr(new ArrayList(Arrays.asList(strList)),FDList,certainty);
+//                            if(equal(closure,r))
+//                                isMinimal = false;
+//                        }
+//                    }
+//                    if(isMinimal)
+//                        minimalKeys.add(pdf.x);
+//                }
+//            }
+//        }
+//        return minimalKeys;
+//    }
+
+    public static ArrayList<ArrayList<String>> getAllMinimalKeys(ArrayList<PFD> FDList, ArrayList<String> r, int certainty){
+        ArrayList<ArrayList<String>> allMinimalKeys = new ArrayList<>();
+        ArrayList<String> subset = getAllCombo(r);
+        ArrayList<String> subsetClone = new ArrayList<>(subset);
+        ArrayList<String> acceptedCombo = new ArrayList<>();
+        for (String combo: subset) {
+             ArrayList<String> strList = new ArrayList<>(Arrays.asList(combo.split("")));
+             ArrayList<String> closure = getClosureForAttr(strList, FDList, certainty);
+            if(!isSuperset(acceptedCombo,combo)){
+                if(equal(closure,r)){
+                    allMinimalKeys.add(strList);
+                    acceptedCombo.add(combo);
                 }
             }
+
         }
-        return minimalKeys;
+        return allMinimalKeys;
     }
-    public static boolean isSatisfied3NF(ArrayList<PFD> FDList, ArrayList<String> r, int certainty){
-        ArrayList<String> betaPrimeList = getBetaPrimeList(FDList,r,certainty);
-        ArrayList<ArrayList<String>> minimalKeys = getMinimalKeys(FDList,r,certainty);
+    public static ArrayList<ArrayList<String>> getAllMinimalKeysV2(ArrayList<PFD> FDList, ArrayList<String> r, int certainty){
+        ArrayList<ArrayList<String>> allMinimalKeys = new ArrayList<>();
+        ArrayList<PFD> canCoverFDList = getCanCover1(FDList);
+        ArrayList<String> L = new ArrayList<>();
+        ArrayList<String> R = new ArrayList<>();
+        ArrayList<String> B = new ArrayList<>();
+        ArrayList<String> LTemp = new ArrayList<>();
+        ArrayList<String> RTemp = new ArrayList<>();
+
+        for (PFD pfd: canCoverFDList) {
+            LTemp.addAll(pfd.x);
+            RTemp.addAll(pfd.y);
+        }
+        for (String attr: r) {
+            if(LTemp.contains(attr) && !RTemp.contains(attr))
+                L.add(attr);
+            else if(!LTemp.contains(attr) && RTemp.contains(attr))
+                R.add(attr);
+            else if(LTemp.contains(attr) && RTemp.contains(attr))
+                B.add(attr);
+            else
+                L.add(attr);
+        }
+        System.out.println(L.toString());
+        System.out.println(R.toString());
+        System.out.println(B.toString());
+        if(equal(r,getClosureForAttr(L,FDList,certainty)))
+            allMinimalKeys.add(L);
+        else{
+            ArrayList<String> allComb = getAllCombo(B);
+            ArrayList<String> acceptedComb = new ArrayList<>();
+            for (String comb: allComb) {
+                ArrayList<String> currentList = new ArrayList<>(L);
+                currentList.addAll(new ArrayList<>(Arrays.asList(comb.split(""))));
+                if(!isSuperset(acceptedComb,comb)){
+                    if(equal(r,getClosureForAttr(currentList,FDList,certainty))){
+                        allMinimalKeys.add(currentList);
+                        acceptedComb.add(comb);
+                    }
+                }
+            }
+
+        }
+        return allMinimalKeys;
+    }
+
+    //check whether it is a superset
+    public static boolean isSuperset(ArrayList<String> acceptedComb, String selectedComb){
+        for (String curComb: acceptedComb) {
+            if(Arrays.asList(selectedComb.split("")).containsAll(Arrays.asList(curComb.split(""))))
+                return true;
+        }
+        return false;
+    }
+
+    public static boolean isSatisfied3NF(ArrayList<PFD> FDList, ArrayList<String> r, int certainty,ArrayList<ArrayList<String>> minimalKeys){
+        ArrayList<String> betaPrimeList = getBetaPrimeList(r,minimalKeys);
         boolean isSatisfied = true;
         for (PFD pfd: FDList){
-            if(!isMinimalKey(pfd.x,minimalKeys))
+            if(!equal(getClosureForAttr(pfd.x,FDList,certainty),r))
                 isSatisfied = false;
         }
         if(!isSatisfied){
             for (PFD pfd: FDList){
                 isSatisfied = true;
                 ArrayList<String> yList = pfd.y;
+                Iterator<String> it = yList.iterator();
+                while (it.hasNext()){
+                    String x = it.next();
+                    if(pfd.x.contains(x))
+                        it.remove();
+                }
                 if(!contain(betaPrimeList,yList))
                     return false;
             }
         }
         return isSatisfied;
     }
-//    public static boolean isSatisfied3NF(ArrayList<PFD> FDList, ArrayList<String> r, int certainty){
-//        ArrayList<String> betaPrimeList = getBetaPrimeList(FDList,r,certainty);
-//        for (PFD pfd: FDList){
-//            ArrayList<String> xList = pfd.x;
-//            if(!contain(betaPrimeList,xList))
-//                return false;
-//        }
-//        return true;
-//    }
 
-    public static ArrayList<String> getBetaPrimeList(ArrayList<PFD> FDList, ArrayList<String> r, int certainty){
+
+    public static ArrayList<String> getBetaPrimeList(ArrayList<String> r,ArrayList<ArrayList<String>> minimalKeys){
         ArrayList<String> betaPrimeList = new ArrayList<>();
-        ArrayList<ArrayList<String>> minimalKeys = getMinimalKeys(FDList,r,certainty);
         for (String attr: r) {
             if(isContainedAttrInMinkeys(attr,minimalKeys))
                 betaPrimeList.add(attr);
@@ -152,7 +224,7 @@ public class ThirdNF_Decomposition {
             ArrayList<String> xyPrimeList = new ArrayList<>();
             xyPrimeList.addAll(curPfd.x);
             xyPrimeList.addAll(curPfd.y);
-            if(contain(xyList,xyPrimeList) && !curPfd.equals(pfd))
+            if(contain(xyPrimeList,xyList) && !curPfd.equals(pfd))
                 return false;
         }
         return true;
