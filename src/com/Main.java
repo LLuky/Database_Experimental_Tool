@@ -23,7 +23,7 @@ public class Main extends Application {
         window.setTitle("Window");
         Pane myGridPane = new MyGridPane();
         BorderPane borderPane = new BorderPane(myGridPane);
-        scene = new Scene(borderPane,520,400);
+        scene = new Scene(borderPane,550,500);
 //        scene.getStylesheets().add("Theme.css");
         window.setScene(scene);
         window.show();

@@ -246,10 +246,12 @@ public class PFD {
         t1.add("A");
 //        t1.add("D");
         t.retainAll(t1);
-        System.out.println(t.toString());
-        System.out.println(String.join("",t1));
-
-        System.out.println(getAllCombo(r).toString());
+//        System.out.println(t.toString());
+//        System.out.println(String.join("",t1));
+//
+//        System.out.println(getAllCombo(r).toString());
+        double x = 2 / 3.0;
+        System.out.println(x);
 
 }
 

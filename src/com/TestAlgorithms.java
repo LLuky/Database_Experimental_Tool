@@ -104,9 +104,7 @@ public class TestAlgorithms {
         ArrayList<Long> timeList = new ArrayList();
         ArrayList relationsList = new ArrayList();
         while (j < testTime){
-            numOfRelation = 0;
-            FDList = genSigma(r,beta,size);
-//            System.out.println("FDList: " + FDList.toString());
+            System.out.println("Round: "+ j);
             long startTime;
             long stopTime;
             if (algType.equals("BDNF")){
@@ -133,13 +131,14 @@ public class TestAlgorithms {
                     stopTime = System.currentTimeMillis();
                     timeTaken = (stopTime - startTime);
                     System.out.println("Time: " + timeTaken );
+                    System.out.println("Size: " + numOfRelation );
                     timeList.add(timeTaken);
                     relationsList.add(numOfRelation);
                 }
             }
             j++;
         }
-        ArrayList<Integer> averageTime = getAverage(timeList,testTime,beta);
+        ArrayList<Double> averageTime = getAverage(timeList,testTime,beta);
         ArrayList<Integer> averageRelation = getAverageR(relationsList,testTime,beta);
         output += "Time:" + averageTime.toString() + "\n";
         output += "Size:" + averageRelation.toString() + "\n";
@@ -147,26 +146,27 @@ public class TestAlgorithms {
         System.out.println(averageRelation.toString());
     }
 
-    public static ArrayList<Integer> getAverage(ArrayList<Long> timeList, int round, int beta){
-        ArrayList<Integer> averageTime = new ArrayList<>();
+    public static ArrayList<Double> getAverage(ArrayList<Long> timeList, int round, int beta){
+        ArrayList<Double> averageTime = new ArrayList<>();
+        Double roundD = new Double(round);
         for (int i = 0; i < beta ; i++) {
             double sum = 0;
             for (int j = 0; j < round ; j++) {
                 sum += timeList.get(i + (j * beta));
             }
-            averageTime.add((int) (sum / round));
+            averageTime.add(sum / roundD);
         }
         return averageTime;
     }
 
-    public static ArrayList<Integer> getAverageR(ArrayList<Integer> rList, int round, int beta){
-        ArrayList<Integer> averageR = new ArrayList<>();
+    public static ArrayList<Double> getAverageR(ArrayList<Integer> rList, int round, int beta){
+        ArrayList<Double> averageR = new ArrayList<>();
         for (int i = 0; i < beta ; i++) {
             double sum = 0;
             for (int j = 0; j < round ; j++) {
                 sum += rList.get(i + (j * beta));
             }
-            averageR.add((int) (sum / round));
+            averageR.add((sum / round));
         }
         return averageR;
     }

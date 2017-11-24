@@ -13,8 +13,12 @@ import static com.MyGridPane.output;
 public class ThirdNF_Decomposition {
     // Decomposition
     public static ArrayList<Pair<ArrayList<String>,ArrayList<PFD>>> synthesis(ArrayList<String> r,ArrayList<PFD> FDList, int certainty){
+        long start1 = System.currentTimeMillis();
         ArrayList<ArrayList<String>> minimalKeys = getAllMinimalKeysV2(FDList,r,certainty);
+        long stop1 = System.currentTimeMillis();
+        System.out.println("time: " + (stop1-start1));
         System.out.println("Minimal Keys: " + minimalKeys.toString());
+
         ArrayList<Pair<ArrayList<String>,ArrayList<PFD>>> decomposedRs = new ArrayList<>();
         ArrayList<String> rClone = new ArrayList<>(r);
 
@@ -25,7 +29,10 @@ public class ThirdNF_Decomposition {
         if(isSatisfied3NF)
             decomposedRs.add(new Pair(r,FDClone));
         else{
+
             ArrayList<PFD> newFDList = getCanCover2(FDClone);
+
+//            System.out.println("Time: "+ (start-stop));
             ArrayList<PFD> sigmaPrime = new ArrayList<>();
             Iterator<PFD> it = newFDList.iterator();
             while (it.hasNext()){

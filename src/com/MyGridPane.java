@@ -152,7 +152,10 @@ public class MyGridPane extends Pane {
                     if(selectedAlg == "Cononical Cover"){
                         try {
 //                            int k = Integer.valueOf(kTextField.getText());
+                            long time = System.currentTimeMillis();
                             FDList = getCanCover2(FDList);
+                            long time2 = System.currentTimeMillis();
+                            System.out.println("Time: "+ (time2- time));
                             output += FDList.toString();
                         } catch (Exception e){
                             showMessageDialog("Invalid k!");
@@ -291,7 +294,7 @@ public class MyGridPane extends Pane {
         logInfoArea.setEditable(false);
         VBox logInfoBox = new VBox();
         logInfoBox.getChildren().addAll(new Label("Log Information"), logInfoArea);
-        logInfoArea.setPrefSize(420,130);
+        logInfoArea.setPrefSize(500,230);
         logInfoBox.setPadding(new Insets(10,50,20,10));
         list.setPrefSize(50,130);
         HBox hBox = new HBox();

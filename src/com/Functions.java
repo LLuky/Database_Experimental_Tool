@@ -36,11 +36,9 @@ public class Functions {
     public static ArrayList<PFD> getCanCover1(ArrayList<PFD> FDList){
         ArrayList<PFD>  CanCover = new ArrayList<>(FDList);
         for(PFD curPfd: FDList){
-            ArrayList<String> z = new ArrayList<>();
-            z.addAll(curPfd.x);
+            ArrayList<String> z = new ArrayList<>(curPfd.x);
             //fresh copy of the underlying array for iteration
-            ArrayList<String> iter = new ArrayList<>();
-            iter.addAll(z);
+            ArrayList<String> iter = new ArrayList<>(z);
             for(String b: iter){
                 z.remove(b);
                 ArrayList<String> closureArrayList = getClosureForAttr(z,CanCover,curPfd.certainty);
@@ -56,17 +54,14 @@ public class Functions {
                 CanCover.add(pfd);
             }
         }
-//        System.out.println("CanCover(before merge)--"+CanCover.toString());
-        NRcover(CanCover);
-        return CanCover;
+        System.out.println("CanCover(before merge)--"+CanCover.toString());
+        return NRcover(CanCover);
     }
-
 
     //Non-redundant, L-reduced covers where the LHSs of FDs are unique for the same beta
     public static ArrayList<PFD> getCanCover2(ArrayList<PFD> FDList){
         ArrayList<PFD>  CanCover = getCanCover1(FDList);
-        ArrayList<PFD> iter = new ArrayList<>();
-        iter.addAll(CanCover);
+        ArrayList<PFD> iter = new ArrayList<>(CanCover);
         // Store for a Map with the certainty as key and all the X (left-hand side) as value
         HashMap<Integer,ArrayList<ArrayList<String>>> allLeft = new HashMap<>();
 
@@ -76,38 +71,32 @@ public class Functions {
             // Store for a Map with the certainty as key and all the X (left-hand side) as value
             ArrayList<ArrayList<String>> curCerArray = new ArrayList<ArrayList<String>>();
             if(allLeft.containsKey(cur.certainty)){
-                curCerArray = allLeft.get((Integer)cur.certainty);
+                curCerArray = allLeft.get(cur.certainty);
             }
             allLeft.put(cur.certainty,curCerArray);
 
 
             if(!allLeft.get(cur.certainty).contains(cur.x)) {
                 ArrayList<String> holdY = new ArrayList<>();
-
-
                 for (PFD curPfd : iter) {
                     if (equal(curPfd.x, cur.x)
                             && curPfd.certainty == cur.certainty) {
                         holdY.addAll(curPfd.y);
                         CanCover.remove(curPfd);
                     }
-
                 }
                 CanCover.add(new PFD(cur.x, holdY, cur.certainty));
                 curCerArray.add(cur.x);
-                //System.out.println("Round " + i + ":        " + CanCover);
             }
-
         }
-
         System.out.println("CanCover--"+CanCover.toString()+'\n');
         return CanCover;
     }
 
     private static ArrayList<PFD> NRcover(ArrayList<PFD> FDList){
-        ArrayList<PFD>  NRCover = FDList;
-        ArrayList<PFD>  checkList = new ArrayList<>();
-        checkList.addAll(FDList);
+        ArrayList<PFD>  NRCover = new ArrayList<>(FDList);
+        ArrayList<PFD>  checkList = new ArrayList<>(FDList);
+
 
         for(PFD curPfd: checkList) {
             NRCover.remove(curPfd);
@@ -239,7 +228,18 @@ public class Functions {
     }
     public static ArrayList<PFD> projectToR(ArrayList<String> r1, ArrayList<PFD> FDList,int certainty){
         ArrayList<PFD> projectionOfR = new ArrayList<>();
-        ArrayList<String> allCombo = getAllCombo(r1);
+        ArrayList<String> rList = new ArrayList<>();
+        ArrayList<String> rClone = new ArrayList<>(r1);
+        for (PFD pfd: FDList) {
+            rList.addAll(pfd.x);
+        }
+        Iterator<String> it = rClone.iterator();
+        while (it.hasNext()){
+            String cur = it.next();
+            if(!rList.contains(cur))
+                it.remove();
+        }
+        ArrayList<String> allCombo = getAllCombo(rClone);
         ArrayList<String> keyList = new ArrayList<>();
         for (String str : allCombo){
             ArrayList<String> strList = new ArrayList<>(Arrays.asList(str.split("")));
