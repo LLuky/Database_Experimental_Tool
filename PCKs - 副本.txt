@@ -1,0 +1,6 @@
+PCK
+Z;R;O
+ZRO;ZR;3
+ZO;Z;2
+ZR;R;1
+RO;R;1

@@ -9,7 +9,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.util.Pair;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -17,18 +16,12 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static com.Functions.*;
-//import static com.MyConstraintReader.fileReader;
-import static com.TestAlgorithms.*;
-import static com.ThirdNF_Decomposition.getAllMinimalKeys;
-//import static com.ThirdNF_Decomposition.getMinimalKeys;
-import static com.ThirdNF_Decomposition.getAllMinimalKeysV2;
-import static com.ThirdNF_Decomposition.synthesis;
-import static com.createJavaFXNodeFunctions.getTestAlgDialog;
-import static com.createJavaFXNodeFunctions.initFileChooseWithFilter;
-import static com.createJavaFXNodeFunctions.showMessageDialog;
+import static com.TestAlgorithms.testAlgorithmsVersion3;
+import static com.createJavaFXNodeFunctions.*;
 
 
-public class MyGridPane extends Pane {
+
+public class MyGridPane_PCK extends Pane {
     String selectedAlg = null;
     static final String runInfoStr = "======= Run Information ======= \n";
     static String output = "";
@@ -36,9 +29,9 @@ public class MyGridPane extends Pane {
     static TextField rTextField;
     static int beta = 0;
     static ArrayList<String>    R      =  new ArrayList<>();
-    static ArrayList<PFD>       FDList =  new ArrayList<>();
+    static ArrayList<PCK>       PCKList =  new ArrayList<>();
 
-    public MyGridPane(){
+    public MyGridPane_PCK(){
         GridPane gridPane = new GridPane();
         gridPane.setPadding(new Insets(10,10,10,10));
         gridPane.setVgap(8);
@@ -49,20 +42,20 @@ public class MyGridPane extends Pane {
         gridPane.add(rLabel,0,5);
         gridPane.add(rTextField,1,5);
 
+        Label tLabel = new Label("test in r  = ");
+        TextField tTextField = new TextField();
+        gridPane.add(tLabel,0,4);
+        gridPane.add(tTextField,1,4);
+
+        Label cLabel = new Label("C = ");
+        TextField cTextField = new TextField();
+        gridPane.add(cLabel,0,0);
+        gridPane.add(cTextField,1,0);
+
         Label kLabel = new Label("K = ");
         TextField kTextField = new TextField();
-        gridPane.add(kLabel,0,4);
-        gridPane.add(kTextField,1,4);
-
-        Label xLabel = new Label("X = ");
-        TextField xTextField = new TextField();
-        gridPane.add(xLabel,0,0);
-        gridPane.add(xTextField,1,0);
-
-        Label yLabel = new Label("Y = ");
-        TextField yTextField = new TextField();
-        gridPane.add(yLabel,0,1);
-        gridPane.add(yTextField,1,1);
+        gridPane.add(kLabel,0,1);
+        gridPane.add(kTextField,1,1);
 
         Label bLabel = new Label("\u00DF"+" = ");
         TextField bTextField = new TextField();
@@ -72,15 +65,7 @@ public class MyGridPane extends Pane {
         Label algLabel = new Label("Algorithm: ");
         ObservableList<String> algOptions =
                 FXCollections.observableArrayList(
-                        "Cononical Cover",
-                        "BDNF",
-                        "3NF",
-                        "Minimal Keys old version",
-                        "Minimal Keys",
-                        "PFDs Generator",
-                        "Algorithm Test",
-                        "Projection v1",
-                        "Projection v3"
+                        "Armstrong Relation"
                 );
         ComboBox algComboBox = new ComboBox(algOptions);
         algComboBox.setOnAction(new EventHandler<ActionEvent>() {
@@ -100,34 +85,34 @@ public class MyGridPane extends Pane {
 
         HBox buttonBox = new HBox();
         buttonBox.setSpacing(5);
-        buttonBox.setPadding(new javafx.geometry.Insets(10, 20, 10, 20));
+        buttonBox.setPadding(new Insets(10, 20, 10, 20));
 
-        Button addpfdButton = new Button("Add");
-        addpfdButton.setOnAction(new EventHandler<ActionEvent>() {
+        Button addpckButton = new Button("Add");
+        addpckButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 try {
-                    String[] x = xTextField.getText().split("");
-                    String[] y = yTextField.getText().split("");
+                    String[] x = cTextField.getText().split("");
+                    String[] y = kTextField.getText().split("");
                     int b = Integer.valueOf(bTextField.getText());
-                    PFD pfd = new PFD( new ArrayList<String>(Arrays.asList(x)),new ArrayList<String>(Arrays.asList(y)),b);
+                    PCK pck = new PCK( new ArrayList<String>(Arrays.asList(x)),new ArrayList<String>(Arrays.asList(y)),b);
                     items.remove(" ");
-                    items.add(pfd.toString());
-                    FDList.add(pfd);
+                    items.add(pck.toString());
+                    PCKList.add(pck);
                 }catch (Exception e){
                     showMessageDialog("Invalid input!");
                 }
 
             }
         });
-        Button removepfdButton = new Button("Remove");
-        removepfdButton.setOnAction(new EventHandler<ActionEvent>() {
+        Button removepckButton = new Button("Remove");
+        removepckButton.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 try{
                     String selectedItem = list.getSelectionModel().getSelectedItem().toString();
                     items.remove(selectedItem);
-                    FDList.remove(getPfd(selectedItem));
+                    PCKList.remove(getPCK(selectedItem));
                 }catch (NullPointerException e){
                     showMessageDialog("Please select an item on the list!");
                 }
@@ -144,24 +129,44 @@ public class MyGridPane extends Pane {
                 if(selectedAlg == null){
                     showMessageDialog("Please select an algorithm!");
                 }
-                else if (FDList.isEmpty() && !selectedAlg.equals("PFDs Generator") && !selectedAlg.equals("Algorithm Test")){
-                    showMessageDialog("Please add Possibilistic Functional Dependencies!");
+                else if (PCKList.isEmpty() && !selectedAlg.equals("PCKs Generator") && !selectedAlg.equals("Algorithm Test")){
+                    showMessageDialog("Please add Possibilistic Contextual Key!");
                 }
                 else {
                     output += selectedAlg + ":\n";
-                    if(selectedAlg == "Cononical Cover"){
+                    if(selectedAlg == "Armstrong Relation"){
                         try {
-//                            int k = Integer.valueOf(kTextField.getText());
+
+                            int t = Integer.valueOf(tTextField.getText());
+
                             long time = System.currentTimeMillis();
-                            FDList = getCanCover2(FDList);
+                            System.out.println("What's in it?"+PCKList);
+
+                            ArmstrongPCK armstrongPCK = new ArmstrongPCK(R, t,PCKList);//Integer.valueOf(bTextField.getText())
+                            ArrayList<ArrayList<String>> antiPCK= armstrongPCK.visualizePCK();
+
                             long time2 = System.currentTimeMillis();
                             System.out.println("Time: "+ (time2- time));
-                            output += FDList.toString();
+
+                            output += "\n Anti PCK: \n";
+                            for(int i = 1; i< armstrongPCK.antiSigSet.size();i++) {
+                                output += armstrongPCK.antiSigSet.get(i) + "\n";
+                            }
+
+
+                            output += "\n Armstrong Relation: \n";
+                            for(String attr:R){
+                                output += attr + "      ";
+                            }
+                            output += "p-degree \n";
+                            for(int i = 0; i< antiPCK.size();i++) {
+                                output += antiPCK.get(i) +"\n";
+                            }
                         } catch (Exception e){
-                            showMessageDialog("Invalid k!");
+                            showMessageDialog("Invalid certainty \u03B1!");
                         }
 
-                    }
+                    }/*
                     else if(selectedAlg == "BDNF"){
                         try{
                             int k = Integer.valueOf(kTextField.getText());
@@ -235,9 +240,9 @@ public class MyGridPane extends Pane {
                         catch (Exception e){
                             showMessageDialog("Invalid Input!");
                         }
-                    }
-                    else if(selectedAlg == "PFDs Generator"){
-                        Dialog dialog = getTestAlgDialog("PFDs Generator");
+                    }*/
+                    else if(selectedAlg == "PCKs Generator"){
+                        Dialog dialog = getTestAlgDialog("PCKs Generator");
                         Optional<ArrayList<String>> result = dialog.showAndWait();
                         ArrayList<String> resultList = result.get();
                         int size = Integer.valueOf(resultList.get(0));
@@ -245,10 +250,10 @@ public class MyGridPane extends Pane {
                         R = getRelationList(resultList.get(2));
 
                         items.removeAll(items);
-                        FDList = genSigma(R,beta,size);
-                        for (PFD pfd: FDList) {
-                            items.add(pfd.toString());
-                        }
+//                        PCKList = genSigma(R,beta,size);
+//                        for (PFD pfd: PCKList) {
+//                            items.add(pfd.toString());
+//                        }
                     }
                     else if(selectedAlg.equals("Algorithm Test")){
                         Dialog dialog = getTestAlgDialog("v2");
@@ -280,16 +285,17 @@ public class MyGridPane extends Pane {
                     items.removeAll(items);
 
                     MyConstraintReader consReader = new MyConstraintReader(selectedFile);
-                    FDList = new ArrayList<>(consReader.importedConstraints);
-                    for (PFD pfd: FDList) {
-                        items.add(pfd.toString());
+                    R = consReader.R;
+                    PCKList = new ArrayList<>(consReader.importedConstraints);
+                    for (PCK pck: PCKList) {
+                        items.add(pck.toString());
                     }
                 } catch (Exception e){
                     System.out.println(e.fillInStackTrace());
                 }
             }
         });
-        buttonBox.getChildren().addAll(addpfdButton,removepfdButton,runButton,importButton);
+        buttonBox.getChildren().addAll(addpckButton,removepckButton,runButton,importButton);
 //        this.add(buttonBox,1,3);
 
         logInfoArea = new TextArea();
@@ -312,11 +318,11 @@ public class MyGridPane extends Pane {
 
     }
 
-    public static PFD getPfd(String str){
-        PFD target = null;
-        for (PFD pfd: FDList) {
-            if(pfd.toString().equals(str))
-                target = pfd;
+    public static PCK getPCK(String str){
+        PCK target = null;
+        for (PCK pck: PCKList) {
+            if(pck.toString().equals(str))
+                target = pck;
         }
         return target;
     }

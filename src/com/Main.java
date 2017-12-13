@@ -21,7 +21,8 @@ public class Main extends Application {
 
         window = primaryStage;
         window.setTitle("Window");
-        Pane myGridPane = new MyGridPane();
+        //Pane myGridPane = new MyGridPane();
+        Pane myGridPane = new MyGridPane_PCK();
         BorderPane borderPane = new BorderPane(myGridPane);
         scene = new Scene(borderPane,550,500);
 //        scene.getStylesheets().add("Theme.css");
